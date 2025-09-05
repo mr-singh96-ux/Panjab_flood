@@ -1,5 +1,7 @@
 'use client';
-export const runtime = 'nodejs';
+
+import { useEffect, useState } from 'react';
+import VictimDashboard from '@/components/victim-dashboard';
 
 export function generateViewport() {
   return {
@@ -8,15 +10,21 @@ export function generateViewport() {
   };
 }
 
-import { useState, useEffect } from 'react';
-import VictimDashboard from '@/components/victim-dashboard';
-
 export default function VictimPage() {
   const [queue, setQueue] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setQueue(localStorage.getItem("queue"));
+    setMounted(true); // Ensure client-side only
+    setQueue(localStorage.getItem("queue")); // Safe now
+    const handleResize = () => {
+      // resize logic
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  return <VictimDashboard />;
+  if (!mounted) return null; // Avoid SSR errors
+
+  return <VictimDashboard queue={queue} />;
 }
