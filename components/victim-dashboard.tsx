@@ -73,7 +73,7 @@ export default function VictimDashboard({ user, requests = [], messages = [] }: 
   }, [anonymousUserId])
 
   const { offlineAwareInsert } = useOfflineSync({
-    userId: anonymousUserId,
+    userId: anonymousUserId ?? "",
     userRole: "victim",
   })
 

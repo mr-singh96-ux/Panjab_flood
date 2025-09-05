@@ -24,7 +24,7 @@ export default function AdminDashboard() {
   const router = useRouter()
 
   const [anonymousUserId] = useState(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && window.crypto) {
       let userId = localStorage.getItem("anonymous_admin_id")
       if (!userId) {
         userId = window.crypto.randomUUID()
@@ -32,7 +32,8 @@ export default function AdminDashboard() {
       }
       return userId
     }
-    return window.crypto.randomUUID()
+    // Use window.crypto only if window is defined, otherwise fallback to a random string
+    return Math.random().toString(36).substring(2)
   })
 
   const { offlineAwareUpdate } = useOfflineSync({
@@ -125,12 +126,12 @@ export default function AdminDashboard() {
   }, [])
 
   const handleAssignVolunteer = async (requestId: string, volunteerId: string) => {
-    setIsAssigning(requestId)
+    setIsAssigning(requestId);
 
     try {
-      const volunteer = volunteers.find((v) => v.anonymous_volunteer_id === volunteerId)
+      const volunteer = volunteers.find((v) => v.anonymous_volunteer_id === volunteerId);
       if (!volunteer) {
-        throw new Error("Volunteer not found")
+        throw new Error("Volunteer not found");
       }
 
       const updatedRequest = {
@@ -139,7 +140,7 @@ export default function AdminDashboard() {
         status: "assigned",
         assigned_at: new Date().toISOString(),
         assignment_method: "admin_assigned",
-      }
+      };
 
       await offlineAwareUpdate(
         "requests",
@@ -149,97 +150,97 @@ export default function AdminDashboard() {
           assigned_at: new Date().toISOString(),
           assignment_method: "admin_assigned",
         },
-        requestId,
-      )
-
-      await offlineAwareUpdate("volunteers", { is_available: false }, null, {
-        anonymous_volunteer_id: volunteerId,
-      })
+        requestId
+      );
+      await offlineAwareUpdate(
+        "volunteers",
+        { is_available: false },
+        volunteerId,
+        "medium"
+      );
 
       // Update local storage for volunteer
-      const volunteerAssignedKey = `volunteer_assigned_${volunteerId}`
-      const existingAssignments = JSON.parse(localStorage.getItem(volunteerAssignedKey) || "[]")
-      const updatedAssignments = [...existingAssignments.filter((r: any) => r.id !== requestId), updatedRequest]
-      localStorage.setItem(volunteerAssignedKey, JSON.stringify(updatedAssignments))
+      const volunteerAssignedKey = `volunteer_assigned_${volunteerId}`;
+      const existingAssignments = JSON.parse(localStorage.getItem(volunteerAssignedKey) || "[]");
+      const updatedAssignments = [...existingAssignments.filter((r: any) => r.id !== requestId), updatedRequest];
+      localStorage.setItem(volunteerAssignedKey, JSON.stringify(updatedAssignments));
 
       // Update victim requests in localStorage
       for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
+        const key = localStorage.key(i);
         if (key?.startsWith("victim_requests_")) {
-          const requests = JSON.parse(localStorage.getItem(key) || "[]")
-          const updatedRequests = requests.map((r: any) => (r.id === requestId ? updatedRequest : r))
-          localStorage.setItem(key, JSON.stringify(updatedRequests))
+          const requestsArr = JSON.parse(localStorage.getItem(key) || "[]");
+          const updatedRequests = requestsArr.map((r: any) => (r.id === requestId ? updatedRequest : r));
+          localStorage.setItem(key, JSON.stringify(updatedRequests));
         }
       }
 
       // Send notification to volunteer
-      const volunteerMessagesKey = `volunteer_messages_${volunteerId}`
-      const existingMessages = JSON.parse(localStorage.getItem(volunteerMessagesKey) || "[]")
+      const volunteerMessagesKey = `volunteer_messages_${volunteerId}`;
+      const existingMessages = JSON.parse(localStorage.getItem(volunteerMessagesKey) || "[]");
       const assignmentMessage = {
-        id: window.crypto.randomUUID(),
+        id: typeof window !== "undefined" && window.crypto ? window.crypto.randomUUID() : Math.random().toString(36).substring(2),
         title: `New Assignment: ${updatedRequest.title}`,
         content: `You have been assigned to help ${updatedRequest.contact_name || "a victim"} at ${updatedRequest.location}. Please check your assignments tab for details.`,
         created_at: new Date().toISOString(),
         is_read: false,
         request: updatedRequest,
-      }
-      localStorage.setItem(volunteerMessagesKey, JSON.stringify([assignmentMessage, ...existingMessages]))
+      };
+      localStorage.setItem(volunteerMessagesKey, JSON.stringify([assignmentMessage, ...existingMessages]));
 
       // Refresh local state
-      setRequests((prev) => prev.map((r) => (r.id === requestId ? updatedRequest : r)))
-      await loadVolunteersFromDatabase() // Refresh volunteer list
-      router.refresh()
+      setRequests((prev) => prev.map((r) => (r.id === requestId ? updatedRequest : r)));
+      await loadVolunteersFromDatabase(); // Refresh volunteer list
+      router.refresh();
     } catch (error) {
-      console.error("Error assigning volunteer:", error)
+      console.error("Error assigning volunteer:", error);
     } finally {
-      setIsAssigning(null)
+      setIsAssigning(null);
     }
-  }
+  };
 
   const handleUpdateStatus = async (requestId: string, newStatus: string) => {
     try {
-      const updateData: any = { status: newStatus }
+      const updateData: any = { status: newStatus };
       if (newStatus === "completed") {
-        updateData.completed_at = new Date().toISOString()
+        updateData.completed_at = new Date().toISOString();
       }
 
-      const request = requests.find((r) => r.id === requestId)
-      const updatedRequest = { ...request, ...updateData }
+      const request = requests.find((r) => r.id === requestId);
+      const updatedRequest = { ...request, ...updateData };
 
-      await offlineAwareUpdate("requests", updateData, requestId)
+      await offlineAwareUpdate("requests", updateData, requestId);
 
       if (request?.assigned_volunteer_id) {
-        const volunteerAssignedKey = `volunteer_assigned_${request.assigned_volunteer_id}`
-        const existingAssignments = JSON.parse(localStorage.getItem(volunteerAssignedKey) || "[]")
-        const updatedAssignments = existingAssignments.map((r: any) => (r.id === requestId ? updatedRequest : r))
-        localStorage.setItem(volunteerAssignedKey, JSON.stringify(updatedAssignments))
-      }
+        const volunteerAssignedKey = `volunteer_assigned_${request.assigned_volunteer_id}`;
+        const existingAssignments = JSON.parse(localStorage.getItem(volunteerAssignedKey) || "[]");
+        const updatedAssignments = existingAssignments.map((r: any) => (r.id === requestId ? updatedRequest : r));
+        localStorage.setItem(volunteerAssignedKey, JSON.stringify(updatedAssignments));
 
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key?.startsWith("victim_requests_")) {
-          const requests = JSON.parse(localStorage.getItem(key) || "[]")
-          const updatedRequests = requests.map((r: any) => (r.id === requestId ? updatedRequest : r))
-          localStorage.setItem(key, JSON.stringify(updatedRequests))
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key?.startsWith("victim_requests_")) {
+            const requestsArr = JSON.parse(localStorage.getItem(key) || "[]");
+            const updatedRequests = requestsArr.map((r: any) => (r.id === requestId ? updatedRequest : r));
+            localStorage.setItem(key, JSON.stringify(updatedRequests));
+          }
         }
-      }
 
-      // If completed, make volunteer available again
-      if (newStatus === "completed") {
-        if (request?.assigned_volunteer_id) {
-          await offlineAwareUpdate("volunteers", { is_available: true }, null, {
-            anonymous_volunteer_id: request.assigned_volunteer_id,
-          })
-        }
+        await offlineAwareUpdate(
+          "volunteers",
+          { is_available: true },
+          request.assigned_volunteer_id,
+          "medium"
+        );
       }
 
       // Refresh local state
-      setRequests((prev) => prev.map((r) => (r.id === requestId ? updatedRequest : r)))
-      router.refresh()
+      setRequests((prev) => prev.map((r) => (r.id === requestId ? updatedRequest : r)));
+      router.refresh();
     } catch (error) {
-      console.error("Error updating status:", error)
+      console.error("Error updating status:", error);
     }
-  }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
