@@ -16,6 +16,14 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
 })
 
+// app/layout.tsx
+export const viewport = {
+  themeColor: "#ffffff",
+  width: "device-width",
+  initialScale: 1,
+};
+
+
 export const metadata: Metadata = {
   title: "Flood Relief Coordination",
   description: "Emergency coordination system for flood victims and volunteers",
