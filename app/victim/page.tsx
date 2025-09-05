@@ -1,20 +1,22 @@
-"use client";
-export const dynamic = "force-dynamic"
-import VictimDashboard from "@/components/victim-dashboard"
-// export const dynamic = "force-dynamic"
-import { useEffect, useState } from "react";
+'use client';
+export const runtime = 'nodejs';
 
-const [queue, setQueue] = useState<string | null>(null);
-
-function handleResize() {
-  // Add your resize logic here if needed
+export function generateViewport() {
+  return {
+    viewport: 'width=device-width, initial-scale=1',
+    themeColor: '#ff0078',
+  };
 }
 
-useEffect(() => {
-  setQueue(localStorage.getItem("queue"));
-  window.addEventListener("resize", handleResize);
-  return () => window.removeEventListener("resize", handleResize);
-}, []);
+import { useState, useEffect } from 'react';
+import VictimDashboard from '@/components/victim-dashboard';
+
 export default function VictimPage() {
-  return <VictimDashboard />
+  const [queue, setQueue] = useState<string | null>(null);
+
+  useEffect(() => {
+    setQueue(localStorage.getItem("queue"));
+  }, []);
+
+  return <VictimDashboard />;
 }
