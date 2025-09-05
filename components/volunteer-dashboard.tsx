@@ -45,7 +45,7 @@ const handleUpdateStatus = async (requestId: string, newStatus: string) => {
 
     // 1. Update the request status
     const { error: requestError } = await supabase
-      .from("requests")
+      .from("requests") // Ensure this matches your actual table name
       .update({ status: newStatus })
       .eq("id", requestId);
 
