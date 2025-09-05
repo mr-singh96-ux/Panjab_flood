@@ -45,7 +45,7 @@ const handleUpdateStatus = async (requestId: string, newStatus: string) => {
 
     // 1. Update the request status
     const { error: requestError } = await supabase
-      .from("relief_requests")
+      .from("requests")
       .update({ status: newStatus })
       .eq("id", requestId);
 
